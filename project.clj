@@ -1,4 +1,4 @@
-(defproject ring-undertow-adapter "0.1.0-SNAPSHOT"
+(defproject ring-undertow-adapter "0.1.0"
   :description "Ring Underow adapter."
   :url "http://github.com/piranha/ring-adapter-undertow"
   :license {:name "ISC License"

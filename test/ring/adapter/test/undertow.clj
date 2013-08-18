@@ -20,7 +20,7 @@
    :body (:body request)})
 
 (defmacro with-server [app options & body]
-  `(let [server# (run-undertow ~app ~(assoc options :join? false))]
+  `(let [server# (run-undertow ~app ~options)]
      (try
        ~@body
        (finally (.stop server#)))))
@@ -33,43 +33,6 @@
         (is (.startsWith (get-in response [:headers "content-type"])
                          "text/plain"))
         (is (= (:body response) "Hello World")))))
-
-  ;; (testing "setting daemon threads"
-  ;;   (testing "default (daemon off)"
-  ;;     (let [server (run-undertow hello-world {:port 4347 :join? false})]
-  ;;       (is (not (.. server getThreadPool isDaemon)))
-  ;;       (.stop server)))
-  ;;   (testing "daemon on"
-  ;;     (let [server (run-undertow hello-world {:port 4347 :join? false :daemon? true})]
-  ;;       (is (.. server getThreadPool isDaemon))
-  ;;       (.stop server)))
-  ;;   (testing "daemon off"
-  ;;     (let [server (run-undertow hello-world {:port 4347 :join? false :daemon? false})]
-  ;;       (is (not (.. server getThreadPool isDaemon)))
-  ;;       (.stop server))))
-
-  ;; (testing "setting max idle timeout"
-  ;;   (let [server (run-undertow hello-world {:port 4347
-  ;;                                        :ssl-port 4348
-  ;;                                        :keystore "test/keystore.jks"
-  ;;                                        :key-password "password"
-  ;;                                        :join? false
-  ;;                                        :max-idle-time 5000})
-  ;;         connectors (. server getConnectors)]
-  ;;     (is (= 5000 (. (first connectors) getMaxIdleTime)))
-  ;;     (is (= 5000 (. (second connectors) getMaxIdleTime)))
-  ;;     (.stop server)))
-
-  ;; (testing "using the default max idle time"
-  ;;   (let [server (run-undertow hello-world {:port 4347
-  ;;                                        :ssl-port 4348
-  ;;                                        :keystore "test/keystore.jks"
-  ;;                                        :key-password "password"
-  ;;                                        :join? false})
-  ;;         connectors (. server getConnectors)]
-  ;;     (is (= 200000 (. (first connectors) getMaxIdleTime)))
-  ;;     (is (= 200000 (. (second connectors) getMaxIdleTime)))
-  ;;     (.stop server)))
 
   (testing "default character encoding"
     (with-server (content-type-handler "text/plain") {:port 4347}

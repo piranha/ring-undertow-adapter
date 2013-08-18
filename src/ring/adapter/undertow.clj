@@ -105,16 +105,16 @@
 
 
 (defn ^Undertow run-undertow
-  "Start a Jetty webserver to serve the given handler according to the
+  "Start an Undertow webserver to serve the given handler according to the
   supplied options:
 
-  :configurator - a function called with the Undertow Builder instance
-  :port         - the port to listen on (defaults to 80)
-  :host         - the hostname to listen on
-  :join?        - blocks the thread until server ends (defaults to true)
-  :io-threads   - number of threads to use for I/O (default: number of cores)
+  :configurator   - a function called with the Undertow Builder instance
+  :port           - the port to listen on (defaults to 80)
+  :host           - the hostname to listen on
+  :io-threads     - number of threads to use for I/O (default: number of cores)
   :worker-threads - number of threads to use for processing (default: io-threads * 8)
-  :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)"
+
+  Returns an Undertow server instance. To stop call (.stop server)."
   [handler options]
   (let [b (Undertow/builder)]
     (.addListener b (options :port 80)
