@@ -37,7 +37,7 @@
      :headers            (-> exchange .getRequestHeaders get-headers)
      :content-type       ctype
      :content-length     (-> exchange .getRequestContentLength)
-     :character-encoding (or (and ctype (Headers/extractTokenFromHeader ctype "charset"))
+     :character-encoding (or (when ctype (Headers/extractTokenFromHeader ctype "charset"))
                              "UTF-8")
 ;     :ssl-client-cert    (get-client-cert exchange)
      :body               (.getInputStream exchange)}))
