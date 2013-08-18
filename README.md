@@ -5,7 +5,9 @@ ring-undertow-adapter is a Ring server built with
 
 ## Installation
 
-It's not finished yet.
+Put this in `:dependencies` vector of your `project.clj`:
+
+    [ring-undertow-adapter "0.1.0"]
 
 ## Usage
 
