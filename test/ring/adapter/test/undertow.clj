@@ -19,11 +19,9 @@
     :body    ""}))
 
 (defn- echo-handler [request]
-  (let [b (slurp (:body request))]
-    (println "harrrr" b)
-    {:status 200
-     :headers {"request-map" (str (dissoc request :body))}
-     :body b}))
+  {:status 200
+   :headers {"request-map" (str (dissoc request :body))}
+   :body (:body request)})
 
 (defmacro with-server [app options & body]
   `(let [server# (run-undertow ~app ~(assoc options :join? false))]

@@ -4,7 +4,7 @@
            (java.io File InputStream FileInputStream)
            (io.undertow Handlers Undertow)
            (io.undertow.server HttpHandler HttpServerExchange)
-           (io.undertow.util HeaderMap HttpString HeaderValues))
+           (io.undertow.util HeaderMap HttpString HeaderValues Headers))
   (:require [clojure.java.io :as io]
             [clojure.string :as s]))
 
@@ -25,18 +25,20 @@
 
 (defn- build-exchange-map
   [^HttpServerExchange exchange]
-  (let [headers (.getRequestHeaders exchange)]
+  (let [headers (.getRequestHeaders exchange)
+        ctype (.getFirst headers Headers/CONTENT_TYPE)]
     {:server-port        (-> exchange .getDestinationAddress .getPort)
      :server-name        (-> exchange .getHostName)
-     :remote-addr        (-> exchange .getSourceAddress)
+     :remote-addr        (-> exchange .getSourceAddress .getAddress .getHostAddress)
      :uri                (-> exchange .getRequestURI)
      :query-string       (-> exchange .getQueryString)
      :scheme             (-> exchange .getRequestScheme .toString .toLowerCase keyword)
      :request-method     (-> exchange .getRequestMethod .toString .toLowerCase keyword)
      :headers            (-> exchange .getRequestHeaders get-headers)
-;     :content-type       (.getContentType exchange)
+     :content-type       ctype
      :content-length     (-> exchange .getRequestContentLength)
-;     :character-encoding (.getCharacterEncoding exchange)
+     :character-encoding (or (and ctype (Headers/extractTokenFromHeader ctype "charset"))
+                             "UTF-8")
 ;     :ssl-client-cert    (get-client-cert exchange)
      :body               (.getInputStream exchange)}))
 
