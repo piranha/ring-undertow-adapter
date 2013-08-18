@@ -4,6 +4,5 @@
   :license {:name "ISC License"
             :url "http://opensource.org/licenses/ISC"}
   :dependencies [[ring/ring-core "1.2.0"]
-                 [ring/ring-servlet "1.2.0"]
                  [io.undertow/undertow-core "1.0.0.Beta8"]]
   :profiles {:dev {:dependencies [[clj-http "0.7.6"]]}})

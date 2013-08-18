@@ -39,7 +39,6 @@
      :content-length     (-> exchange .getRequestContentLength)
      :character-encoding (or (when ctype (Headers/extractTokenFromHeader ctype "charset"))
                              "UTF-8")
-;     :ssl-client-cert    (get-client-cert exchange)
      :body               (.getInputStream exchange)}))
 
 ;; Updating response
@@ -105,17 +104,6 @@
         (set-exchange-response exchange response-map)))))
 
 
-(defn- ^Undertow create-builder
-  "Construct an Undertow Builder instance."
-  [options]
-  (let [b (Undertow/builder)]
-    (.addListener b (options :port 80)
-                    (options :host "localhost"))
-    (when (or (:ssl? options) (:ssl-port options))
-      ;; how to handle ssl when listener is a private class?
-      )
-    b))
-
 (defn ^Undertow run-undertow
   "Start a Jetty webserver to serve the given handler according to the
   supplied options:
@@ -124,20 +112,13 @@
   :port         - the port to listen on (defaults to 80)
   :host         - the hostname to listen on
   :join?        - blocks the thread until server ends (defaults to true)
-  :daemon?      - use daemon threads (defaults to false)
-  :ssl?         - allow connections over HTTPS
-  :ssl-port     - the SSL port to listen on (defaults to 443, implies :ssl?)
-  :keystore     - the keystore to use for SSL connections
-  :key-password - the password to the keystore
-  :truststore   - a truststore to use for SSL connections
-  :trust-password - the password to the truststore
   :io-threads   - number of threads to use for I/O (default: number of cores)
   :worker-threads - number of threads to use for processing (default: io-threads * 8)
-  :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
-  :client-auth  - SSL client certificate authenticate, may be set to :need,
-                  :want or :none (defaults to :none)"
+  :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)"
   [handler options]
-  (let [b (create-builder options)]
+  (let [b (Undertow/builder)]
+    (.addListener b (options :port 80)
+                    (options :host "localhost"))
     (.setHandler b (proxy-handler handler))
 
     (when-let [io-threads (:io-threads options)]

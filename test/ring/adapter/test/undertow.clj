@@ -1,11 +1,7 @@
 (ns ring.adapter.test.undertow
   (:use clojure.test
         ring.adapter.undertow)
-  (:require [clj-http.client :as http])
-  (:import ;(org.eclipse.jetty.util.thread QueuedThreadPool)
-           ;(org.eclipse.jetty.server Server Request)
-           ;(org.eclipse.jetty.server.handler AbstractHandler)
-   ))
+  (:require [clj-http.client :as http]))
 
 (defn- hello-world [request]
   {:status  200
@@ -37,15 +33,6 @@
         (is (.startsWith (get-in response [:headers "content-type"])
                          "text/plain"))
         (is (= (:body response) "Hello World")))))
-
-  ;; (testing "HTTPS server"
-  ;;   (with-server hello-world {:port 4347
-  ;;                             :ssl-port 4348
-  ;;                             :keystore "test/keystore.jks"
-  ;;                             :key-password "password"}
-  ;;     (let [response (http/get "https://localhost:4348" {:insecure? true})]
-  ;;       (is (= (:status response) 200))
-  ;;       (is (= (:body response) "Hello World")))))
 
   ;; (testing "setting daemon threads"
   ;;   (testing "default (daemon off)"
