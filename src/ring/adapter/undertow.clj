@@ -38,7 +38,7 @@
      :content-type       ctype
      :content-length     (-> exchange .getRequestContentLength)
      :character-encoding (or (when ctype (Headers/extractTokenFromHeader ctype "charset"))
-                             "UTF-8")
+                             "ISO-8859-1")
      :body               (.getInputStream exchange)}))
 
 ;; Updating response
