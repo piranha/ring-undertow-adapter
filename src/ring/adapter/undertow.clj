@@ -96,8 +96,9 @@
 (defn- proxy-handler
   "Returns an Undertow HttpHandler implementation for the given Ring handler."
   [handler]
-  (proxy [HttpHandler] []
-    (handleRequest [^HttpServerExchange exchange]
+  (reify
+    HttpHandler
+    (handleRequest [_ exchange]
       (.startBlocking exchange)
       (let [request-map (build-exchange-map exchange)
             response-map (handler request-map)]
