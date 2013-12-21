@@ -45,14 +45,14 @@
 
 (defn- set-headers
   [^HeaderMap header-map headers]
-  (doseq [[key val-or-vals] headers
+  (doseq [[^String key val-or-vals] headers
           :let [^HttpString hs (HttpString. key)]]
     (if (string? val-or-vals)
-      (.add header-map hs val-or-vals)
-      (doseq [val val-or-vals]
+      (.add header-map hs ^String val-or-vals)
+      (doseq [^String val val-or-vals]
         (.add header-map hs val)))))
 
-(defn- str-to-bb
+(defn- ^ByteBuffer str-to-bb
   [^String s]
   (ByteBuffer/wrap (.getBytes s "utf-8")))
 
@@ -61,7 +61,7 @@
   (cond
    (string? body)
      (-> (.getResponseSender exchange)
-         (.send body))
+         (.send ^String body))
 
    (seq? body)
      (let [sender (.getResponseSender exchange)]
@@ -96,8 +96,9 @@
 (defn- proxy-handler
   "Returns an Undertow HttpHandler implementation for the given Ring handler."
   [handler]
-  (proxy [HttpHandler] []
-    (handleRequest [^HttpServerExchange exchange]
+  (reify
+    HttpHandler
+    (handleRequest [_ exchange]
       (.startBlocking exchange)
       (let [request-map (build-exchange-map exchange)
             response-map (handler request-map)]
