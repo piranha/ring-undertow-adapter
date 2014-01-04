@@ -3,10 +3,12 @@
   (:import (java.nio ByteBuffer)
            (java.io File InputStream FileInputStream)
            (io.undertow Handlers Undertow)
+           (io.undertow.io Sender)
            (io.undertow.server HttpHandler HttpServerExchange)
            (io.undertow.util HeaderMap HttpString HeaderValues Headers))
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
+(set! *warn-on-reflection* true)
 
 ;; Parsing request
 
@@ -59,31 +61,34 @@
   [^String s]
   (ByteBuffer/wrap (.getBytes s "utf-8")))
 
-(defn- set-body
-  [^HttpServerExchange exchange body]
-  (cond
-   (string? body)
-     (-> (.getResponseSender exchange)
-         (.send ^String body))
+(defprotocol RespondBody
+  (respond [_ ^HttpServerExchange exchange]))
 
-   (seq? body)
-     (let [sender (.getResponseSender exchange)]
-       (doseq [chunk body]
-         (.send sender (str-to-bb chunk))))
+(extend-protocol RespondBody
+  String
+  (respond [body ^HttpServerExchange exchange]
+    (.send ^Sender (.getResponseSender exchange) body))
 
-   (instance? InputStream body)
-     (with-open [^InputStream b body]
-       (io/copy b (.getOutputStream exchange)))
+  InputStream
+  (respond [body ^HttpServerExchange exchange]
+    (with-open [^InputStream b body]
+      (io/copy b (.getOutputStream exchange))))
 
-   (instance? File body)
-     (let [^File f body]
-       (with-open [stream (FileInputStream. f)]
-          (set-body exchange stream)))
+  File
+  (respond [f exchange]
+    (respond (io/input-stream f) exchange))
 
-   (nil? body)
-     nil
+  clojure.lang.ISeq
+  (respond [coll ^HttpServerExchange exchange]
+    (reduce
+     (fn [^Sender sender i]
+       (.send sender (str-to-bb i))
+       sender)
+     (.getResponseSender exchange)
+     coll))
 
-   :else (throw (Exception. ^String (format "Unrecognized body: %s" body)))))
+  nil
+  (respond [_ exc]))
 
 (defn- set-exchange-response
   [^HttpServerExchange exchange {:keys [status headers body]}]
@@ -92,7 +97,7 @@
   (when status
     (.setResponseCode exchange status))
   (set-headers (.getResponseHeaders exchange) headers)
-  (set-body exchange body))
+  (respond body exchange))
 
 ;;; Adapter stuff
 
