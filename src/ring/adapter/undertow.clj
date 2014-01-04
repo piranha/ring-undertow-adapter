@@ -6,22 +6,22 @@
            (io.undertow.server HttpHandler HttpServerExchange)
            (io.undertow.util HeaderMap HttpString HeaderValues Headers))
   (:require [clojure.java.io :as io]
-            [clojure.string :as s]))
+            [clojure.string :as str]))
 
 ;; Parsing request
 
 (defn- get-headers
   [^HeaderMap header-map]
-  (reduce
-   (fn [headers ^HttpString name]
-     (assoc headers
-       (.. name toString toLowerCase)
-       (->> (.get header-map name)
-            .iterator
-            iterator-seq
-            (s/join ","))))
-   {}
-   (.getHeaderNames header-map)))
+  (persistent!
+   (reduce
+    (fn [headers ^HeaderValues entry]
+      (let [k (.. entry getHeaderName toString toLowerCase)
+            val (if (> (.size entry) 1)
+                  (str/join "," (iterator-seq (.iterator entry)))
+                  (.get entry 0))]
+        (assoc! headers k val)))
+    (transient {})
+    header-map)))
 
 (defn- build-exchange-map
   [^HttpServerExchange exchange]
@@ -45,12 +45,15 @@
 
 (defn- set-headers
   [^HeaderMap header-map headers]
-  (doseq [[^String key val-or-vals] headers
-          :let [^HttpString hs (HttpString. key)]]
-    (if (string? val-or-vals)
-      (.put header-map hs ^String val-or-vals)
-      (doseq [^String val val-or-vals]
-        (.put header-map hs val)))))
+  (reduce-kv
+   (fn [^HeaderMap header-map ^String key val-or-vals]
+     (let [key (HttpString. key)]
+       (if (string? val-or-vals)
+         (.put header-map key ^String val-or-vals)
+         (.putAll header-map key val-or-vals)))
+     header-map)
+   header-map
+   headers))
 
 (defn- ^ByteBuffer str-to-bb
   [^String s]
