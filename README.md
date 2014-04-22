@@ -7,7 +7,7 @@ ring-undertow-adapter is a Ring server built with
 
 Put this in `:dependencies` vector of your `project.clj`:
 
-    [ring-undertow-adapter "0.1.4"]
+    [ring-undertow-adapter "0.1.5"]
 
 ## Usage
 
