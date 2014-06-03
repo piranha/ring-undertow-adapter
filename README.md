@@ -1,6 +1,6 @@
 # ring-undertow-adapter
 
-ring-undertow-adapter is a Ring server built with
+ring-undertow-adapter is a [Ring](https://github.com/ring-clojure/ring) server built with
 [Undertow](http://undertow.io).
 
 ## Installation
