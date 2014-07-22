@@ -48,9 +48,9 @@
   (doseq [[^String key val-or-vals] headers
           :let [^HttpString hs (HttpString. key)]]
     (if (string? val-or-vals)
-      (.add header-map hs ^String val-or-vals)
+      (.put header-map hs ^String val-or-vals)
       (doseq [^String val val-or-vals]
-        (.add header-map hs val)))))
+        (.put header-map hs val)))))
 
 (defn- ^ByteBuffer str-to-bb
   [^String s]
