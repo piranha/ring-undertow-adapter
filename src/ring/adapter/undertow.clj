@@ -3,25 +3,27 @@
   (:import (java.nio ByteBuffer)
            (java.io File InputStream FileInputStream)
            (io.undertow Handlers Undertow)
+           (io.undertow.io Sender)
            (io.undertow.server HttpHandler HttpServerExchange)
            (io.undertow.util HeaderMap HttpString HeaderValues Headers))
   (:require [clojure.java.io :as io]
-            [clojure.string :as s]))
+            [clojure.string :as str]))
+(set! *warn-on-reflection* true)
 
 ;; Parsing request
 
 (defn- get-headers
   [^HeaderMap header-map]
-  (reduce
-   (fn [headers ^HttpString name]
-     (assoc headers
-       (.. name toString toLowerCase)
-       (->> (.get header-map name)
-            .iterator
-            iterator-seq
-            (s/join ","))))
-   {}
-   (.getHeaderNames header-map)))
+  (persistent!
+   (reduce
+    (fn [headers ^HeaderValues entry]
+      (let [k (.. entry getHeaderName toString toLowerCase)
+            val (if (> (.size entry) 1)
+                  (str/join "," (iterator-seq (.iterator entry)))
+                  (.get entry 0))]
+        (assoc! headers k val)))
+    (transient {})
+    header-map)))
 
 (defn- build-exchange-map
   [^HttpServerExchange exchange]
@@ -45,42 +47,48 @@
 
 (defn- set-headers
   [^HeaderMap header-map headers]
-  (doseq [[^String key val-or-vals] headers
-          :let [^HttpString hs (HttpString. key)]]
-    (if (string? val-or-vals)
-      (.put header-map hs ^String val-or-vals)
-      (doseq [^String val val-or-vals]
-        (.put header-map hs val)))))
+  (reduce-kv
+   (fn [^HeaderMap header-map ^String key val-or-vals]
+     (let [key (HttpString. key)]
+       (if (string? val-or-vals)
+         (.put header-map key ^String val-or-vals)
+         (.putAll header-map key val-or-vals)))
+     header-map)
+   header-map
+   headers))
 
 (defn- ^ByteBuffer str-to-bb
   [^String s]
   (ByteBuffer/wrap (.getBytes s "utf-8")))
 
-(defn- set-body
-  [^HttpServerExchange exchange body]
-  (cond
-   (string? body)
-     (-> (.getResponseSender exchange)
-         (.send ^String body))
+(defprotocol RespondBody
+  (respond [_ ^HttpServerExchange exchange]))
 
-   (seq? body)
-     (let [sender (.getResponseSender exchange)]
-       (doseq [chunk body]
-         (.send sender (str-to-bb chunk))))
+(extend-protocol RespondBody
+  String
+  (respond [body ^HttpServerExchange exchange]
+    (.send ^Sender (.getResponseSender exchange) body))
 
-   (instance? InputStream body)
-     (with-open [^InputStream b body]
-       (io/copy b (.getOutputStream exchange)))
+  InputStream
+  (respond [body ^HttpServerExchange exchange]
+    (with-open [^InputStream b body]
+      (io/copy b (.getOutputStream exchange))))
 
-   (instance? File body)
-     (let [^File f body]
-       (with-open [stream (FileInputStream. f)]
-          (set-body exchange stream)))
+  File
+  (respond [f exchange]
+    (respond (io/input-stream f) exchange))
 
-   (nil? body)
-     nil
+  clojure.lang.ISeq
+  (respond [coll ^HttpServerExchange exchange]
+    (reduce
+     (fn [^Sender sender i]
+       (.send sender (str-to-bb i))
+       sender)
+     (.getResponseSender exchange)
+     coll))
 
-   :else (throw (Exception. ^String (format "Unrecognized body: %s" body)))))
+  nil
+  (respond [_ exc]))
 
 (defn- set-exchange-response
   [^HttpServerExchange exchange {:keys [status headers body]}]
@@ -89,7 +97,7 @@
   (when status
     (.setResponseCode exchange status))
   (set-headers (.getResponseHeaders exchange) headers)
-  (set-body exchange body))
+  (respond body exchange))
 
 ;;; Adapter stuff
 
