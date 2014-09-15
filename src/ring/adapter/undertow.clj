@@ -126,8 +126,8 @@
   Returns an Undertow server instance. To stop call (.stop server)."
   [handler options]
   (let [b (Undertow/builder)]
-    (.addListener b (options :port 80)
-                    (options :host "localhost"))
+    (.addListener b (:port options 80)
+                    (:host options "localhost"))
     (.setHandler b (proxy-handler handler))
 
     (when-let [io-threads (:io-threads options)]
