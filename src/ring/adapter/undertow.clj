@@ -5,7 +5,8 @@
            (io.undertow Handlers Undertow)
            (io.undertow.io Sender)
            (io.undertow.server HttpHandler HttpServerExchange)
-           (io.undertow.util HeaderMap HttpString HeaderValues Headers))
+           (io.undertow.util HeaderMap HttpString HeaderValues Headers)
+           (io.undertow.server.handlers BlockingHandler))
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 (set! *warn-on-reflection* true)
@@ -104,13 +105,13 @@
 (defn- proxy-handler
   "Returns an Undertow HttpHandler implementation for the given Ring handler."
   [handler]
-  (reify
-    HttpHandler
-    (handleRequest [_ exchange]
-      (.startBlocking exchange)
-      (let [request-map (build-exchange-map exchange)
-            response-map (handler request-map)]
-        (set-exchange-response exchange response-map)))))
+  (BlockingHandler.
+    (reify
+      HttpHandler
+      (handleRequest [_ exchange]
+        (let [request-map (build-exchange-map exchange)
+              response-map (handler request-map)]
+          (set-exchange-response exchange response-map))))))
 
 
 (defn ^Undertow run-undertow
