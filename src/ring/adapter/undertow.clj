@@ -102,17 +102,25 @@
 
 ;;; Adapter stuff
 
-(defn- proxy-handler
+(defn- undertow-handler
   "Returns an Undertow HttpHandler implementation for the given Ring handler."
-  [handler]
-  (BlockingHandler.
-    (reify
-      HttpHandler
-      (handleRequest [_ exchange]
-        (let [request-map (build-exchange-map exchange)
-              response-map (handler request-map)]
-          (set-exchange-response exchange response-map))))))
+  [handler non-blocking]
+  (reify
+    HttpHandler
+    (handleRequest [_ exchange]
+      (when-not non-blocking
+        (.startBlocking exchange))
+      (let [request-map (build-exchange-map exchange)
+            response-map (handler request-map)]
+        (set-exchange-response exchange response-map)))))
 
+(defn- on-io-proxy
+  [handler]
+  (undertow-handler handler false))
+
+(defn- dispatching-proxy
+  [handler]
+  (BlockingHandler. (undertow-handler handler true)))
 
 (defn ^Undertow run-undertow
   "Start an Undertow webserver to serve the given handler according to the
@@ -123,14 +131,16 @@
   :host           - the hostname to listen on
   :io-threads     - number of threads to use for I/O (default: number of cores)
   :worker-threads - number of threads to use for processing (default: io-threads * 8)
+  :dispatch?      - dispatch handlers off the I/O threads (default: true)
 
   Returns an Undertow server instance. To stop call (.stop server)."
-  [handler {:keys [host port]
-            :or   {host "localhost" port 80}
+  [handler {:keys [host port dispatch?]
+            :or   {host "localhost" port 80 dispatch? true}
             :as   options}]
-  (let [^Undertow$Builder b (Undertow/builder)]
+  (let [^Undertow$Builder b (Undertow/builder)
+        handler-proxy (if dispatch? dispatching-proxy on-io-proxy)]
     (.addListener b port host)
-    (.setHandler b (proxy-handler handler))
+    (.setHandler b (handler-proxy handler))
 
     (let [{:keys [io-threads worker-threads]} options]
       (when io-threads     (.setIoThreads b io-threads))
