@@ -2,7 +2,7 @@
   "Adapter for the Undertow webserver."
   (:import (java.nio ByteBuffer)
            (java.io File InputStream FileInputStream)
-           (io.undertow Handlers Undertow)
+           (io.undertow Handlers Undertow Undertow$Builder)
            (io.undertow.io Sender)
            (io.undertow.server HttpHandler HttpServerExchange)
            (io.undertow.util HeaderMap HttpString HeaderValues Headers)
@@ -125,19 +125,20 @@
   :worker-threads - number of threads to use for processing (default: io-threads * 8)
 
   Returns an Undertow server instance. To stop call (.stop server)."
-  [handler options]
-  (let [b (Undertow/builder)]
-    (.addListener b (:port options 80)
-                    (:host options "localhost"))
+  [handler {:keys [host port]
+            :or   {host "localhost" port 80}
+            :as   options}]
+  (let [^Undertow$Builder b (Undertow/builder)]
+    (.addListener b port host)
     (.setHandler b (proxy-handler handler))
 
-    (when-let [io-threads (:io-threads options)]
-      (.setIoThreads b io-threads))
-    (when-let [worker-threads (:worker-threads options)]
-      (.setWorkerThreads b worker-threads))
+    (let [{:keys [io-threads worker-threads]} options]
+      (when io-threads     (.setIoThreads b io-threads))
+      (when worker-threads (.setWorkerThreads b worker-threads)))
+
     (when-let [configurator (:configurator options)]
       (configurator b))
 
-    (let [s (.build b)]
+    (let [^Undertow s (.build b)]
       (.start s)
       s)))
