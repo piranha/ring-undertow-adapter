@@ -7,7 +7,8 @@ ring-undertow-adapter is a [Ring](https://github.com/ring-clojure/ring) server b
 
 Put this in `:dependencies` vector of your `project.clj`:
 
-    [ring-undertow-adapter "0.2.0"]
+[![ring-undertow-adapter latest version](https://clojars.org/ring-undertow-adapter/latest-version.svg)]
+(https://clojars.org/ring-undertow-adapter)
 
 ### Tracking Undertow versions
 
@@ -15,11 +16,11 @@ If you find that `ring-undertow-adapter` has a dependency on an older Undertow,
 you can override that in your own `project.clj` by putting those lines inside of
 `:dependencies`:
 
-```
-[ring-undertow-adapter "0.2.0" :exclusions [io.undertow/undertow-core]]
+```clojure
+; Replace "x.y.z" with your version of ring-undertow-adapter
+[ring-undertow-adapter "x.y.z" :exclusions [io.undertow/undertow-core]]
 [io.undertow/undertow-core "Version-You-Want"]
 ```
-
 
 ## Usage
 
