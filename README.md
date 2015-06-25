@@ -3,6 +3,11 @@
 ring-undertow-adapter is a [Ring](https://github.com/ring-clojure/ring) server built with
 [Undertow](http://undertow.io).
 
+I'm not really spending a lot of time on this, and I think you should look at
+using
+[immutant-web](http://immutant.org/documentation/current/apidoc/guide-web.html)
+rather than this code. It's probably going to be better. :)
+
 ## Installation
 
 Put this in `:dependencies` vector of your `project.clj`:
